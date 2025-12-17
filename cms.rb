@@ -25,30 +25,55 @@ def load_file_content(file_path)
   end
 end
 
-root = File.expand_path("..", __FILE__)
+def data_path
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path("../test/data", __FILE__)
+  else
+    File.expand_path("../data", __FILE__)
+  end
+end
 
 get '/' do
-  @files = Dir.glob(root + "/data/*").map do |path|
+  pattern = File.join(data_path, "*")
+  @files = Dir.glob(pattern).map do |path|
     File.basename(path)
   end
 
   erb :index
 end
 
-get '/:text_file' do
-  file_path = File.join(root, "data", params[:text_file])
+get '/:filename' do
+  file_path = File.join(data_path, params[:filename])
 
   if File.file?(file_path)
     load_file_content(file_path)
   else
-    session[:message] = "#{params[:text_file]} does not exist."
+    session[:message] = "#{params[:filename]} does not exist."
     redirect "/"
   end
 end
 
+get "/:filename/edit" do
+  file_path = File.join(data_path, params[:filename])
+
+  @filename = params[:filename]
+  @content = File.read(file_path)
+
+  erb :edit
+end
+
+post "/:filename" do
+  file_path = File.join(data_path, params[:filename])
+
+  File.write(file_path, params[:content])
+
+  session[:message] = "#{params[:filename]} has been updated."
+  redirect "/"
+end
+
 #  Don’t rescue everything. A bare rescue will catch all exceptions, including
-#  unrelated bugs (e.g., permission errors, nils, etc.), and turn them into
-#  “does not exist,” which can hide real problems.
+#  unrelated bugs (e.g., permission errors, nils, etc.). Here it will turn them into
+#  “[something] does not exist,” which can hide real problems.
 #  If you do rescue, rescue a specific error like Errno::ENOENT. 
 # def load_file(root)
 #   begin
