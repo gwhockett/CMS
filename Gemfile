@@ -10,4 +10,6 @@ gem "minitest"
 
 gem "redcarpet"
 
+gem "bcrypt"
+
 ruby "3.2.2"
